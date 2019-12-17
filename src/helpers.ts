@@ -1,4 +1,6 @@
 
+type RawColor = number[]
+
 export const getContext = (width, height) => {
   const canvas = document.createElement('canvas')
   canvas.setAttribute('width', width)
@@ -32,8 +34,13 @@ export const getImageData = (src: string, scale: number = 1): Promise<Uint8Clamp
   })
 }
 
-export const getCounts = (data: Uint8ClampedArray, ignore: string[]): [] => {
-  const countMap = {}
+export const getCounts = (data: Uint8ClampedArray, ignore: string[], raw: boolean = false): [] => {
+  const countMap: {
+    [color: string]: {
+      color: string | RawColor,
+      count: number
+    }
+  } = {}
 
   for (let i = 0; i < data.length; i += 4 /* 4 gives us r, g, b, and a*/) {
     let alpha: number = data[i + 3]
@@ -46,8 +53,12 @@ export const getCounts = (data: Uint8ClampedArray, ignore: string[]): [] => {
     if (rgbComponents.indexOf(undefined) !== -1) continue
 
     let color: string = alpha && alpha !== 255
-      ? `rgba(${[...rgbComponents, alpha].join(',')})`
-      : `rgb(${rgbComponents.join(',')})`
+    ? `rgba(${[...rgbComponents, alpha].join(',')})`
+    : `rgb(${rgbComponents.join(',')})`
+
+    let rawColor: RawColor = alpha && alpha !== 255
+      ? [...rgbComponents, alpha]
+      : rgbComponents
 
     // skip colors in the ignore list
     if (ignore.indexOf(color) !== -1) continue
@@ -55,7 +66,7 @@ export const getCounts = (data: Uint8ClampedArray, ignore: string[]): [] => {
     if (countMap[color]) {
       countMap[color].count++
     } else {
-      countMap[color] = { color, count: 1 }
+      countMap[color] = { color: raw ? rawColor : color, count: 1 }
     }
   }
 
